@@ -14,7 +14,8 @@ import (
 	"github.com/edouard-claude/snip/internal/tracking"
 )
 
-const version = "0.1.0"
+// version is set at build time via -ldflags "-X ...". Do not reassign.
+var version = "dev"
 
 // Run is the main entry point. Returns exit code.
 func Run(args []string) int {

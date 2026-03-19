@@ -6,6 +6,8 @@ gomod:
 builds:
   - main: ./cmd/snip
     binary: snip
+    ldflags:
+      - -s -w -X github.com/edouard-claude/snip/internal/cli.version={{ .Version }}
     env:
       - CGO_ENABLED=0
     goos:

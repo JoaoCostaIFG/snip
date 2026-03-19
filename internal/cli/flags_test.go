@@ -49,6 +49,18 @@ func TestParseFlags(t *testing.T) {
 			wantArgs:  nil,
 		},
 		{
+			name:      "version after command is passed through",
+			args:      []string{"bun", "--version"},
+			wantFlags: Flags{},
+			wantArgs:  []string{"bun", "--version"},
+		},
+		{
+			name:      "global flags with version after command",
+			args:      []string{"-v", "go", "--version"},
+			wantFlags: Flags{Verbose: 1},
+			wantArgs:  []string{"go", "--version"},
+		},
+		{
 			name:      "built-in command help is preserved",
 			args:      []string{"proxy", "--help"},
 			wantFlags: Flags{Help: true},

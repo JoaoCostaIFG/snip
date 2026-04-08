@@ -238,15 +238,13 @@ dir = ["~/.config/snip/filters", "${env.SNIP_TEST_PROJECT}/.snip"]
 }
 
 func TestExpandEnvVarsUnset(t *testing.T) {
-	t.Setenv("SNIP_TEST_UNSET_CHECK", "")
-	os.Unsetenv("SNIP_TEST_UNSET_CHECK")
-
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
 
+	// Use a var name that is guaranteed to not exist
 	content := `
 [filters]
-dir = "${env.SNIP_TEST_UNSET_CHECK}/.snip"
+dir = "${env.SNIP_TEST_NONEXISTENT_VAR_XYZ}/.snip"
 `
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)

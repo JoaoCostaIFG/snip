@@ -15,11 +15,11 @@ func generateHookScript(snipBin string) string {
 # snip — CLI Token Killer hook for Claude Code
 # PreToolUse hook: reads JSON from stdin, rewrites command through snip
 
-SNIP_BIN="` + snipBin + `"
+SNIP_BIN="` + strings.ReplaceAll(snipBin, `"`, `\"`) + `"
 
 # Graceful degradation: if snip or jq are missing, allow original command
-if ! command -v "$SNIP_BIN" &>/dev/null || ! command -v jq &>/dev/null; then
-  echo "snip: invalid setup — binary not found at $SNIP_BIN" >&2
+if ! [ -x "$SNIP_BIN" ] || ! command -v jq &>/dev/null; then
+  echo "snip: binary not found at $SNIP_BIN -- check your snip init setup" >&2
   exit 0
 fi
 
@@ -121,8 +121,8 @@ FIRST_CMD="${FIRST_SEGMENT:LEADING_WS_LEN:FIRST_CMD_LEN}"
 FIRST_SUFFIX_START=$((LEADING_WS_LEN + FIRST_CMD_LEN))
 FIRST_SUFFIX="${FIRST_SEGMENT:FIRST_SUFFIX_START}"
 
-# Skip if already using snip
-if [ "$FIRST_CMD" = "$SNIP_BIN" ]; then
+# Skip if already using snip (rewritten commands start with quoted SNIP_BIN path)
+if [[ "$FIRST_CMD" == "\"$SNIP_BIN\""* ]] || [[ "$FIRST_CMD" == "$SNIP_BIN "* ]]; then
   exit 0
 fi
 
@@ -188,6 +188,10 @@ func Run(args []string) error {
 	snipBin, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("resolve executable: %w", err)
+	}
+	snipBin, err = filepath.Abs(snipBin)
+	if err != nil {
+		return fmt.Errorf("abs path: %w", err)
 	}
 	snipBin, err = filepath.EvalSymlinks(snipBin)
 	if err != nil {

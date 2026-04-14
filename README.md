@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/github/v/release/edouard-claude/snip?style=flat-square" alt="Release">
   <img src="https://img.shields.io/github/actions/workflow/status/edouard-claude/snip/ci.yaml?branch=master&style=flat-square&label=CI" alt="CI">
   <img src="https://img.shields.io/github/license/edouard-claude/snip?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go" alt="Go">
+  <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat-square&logo=go" alt="Go">
 </p>
 
 # snip - Reduce LLM Token Usage by 60-90%
@@ -132,7 +132,7 @@ git clone https://github.com/edouard-claude/snip.git
 cd snip && make install
 ```
 
-Requires Go 1.24+.
+Requires Go 1.25+.
 
 ## Supported AI Tools
 
@@ -273,6 +273,23 @@ on_error: "passthrough"
 | `git-log` | One-line per commit: hash + message + author + date |
 | `go-test` | Pass/fail summary with failure details |
 | `cargo-test` | Pass/fail summary with failure details |
+| `rspec` | Pass/fail summary for Ruby RSpec |
+| `rails-routes` | Filtered Rails routes output |
+| `rails-migrate` | Filtered Rails migration output |
+| `bundle-install` | Filtered Bundler output |
+| `npm-install` | Basic npm output filtering |
+| `npx` | Basic npx output filtering |
+| `yarn-install` | Basic yarn output filtering |
+| `pnpm-install` | Basic pnpm output filtering |
+| `docker-build` | Basic docker output filtering |
+| `kubectl-get` | Basic kubectl output filtering |
+| `make` | Basic make output filtering |
+| `pip-install` | Basic pip output filtering |
+| `pytest` | Basic pytest output filtering |
+| `jest` | Basic jest output filtering |
+| `tsc` | Basic tsc output filtering |
+| `eslint` | Basic eslint output filtering |
+| `rustc` | Basic rustc output filtering |
 
 ### 16 Pipeline Actions
 

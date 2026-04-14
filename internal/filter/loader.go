@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+// isYAMLFile returns true if the filename ends with .yaml or .yml.
+func isYAMLFile(name string) bool {
+	return strings.HasSuffix(name, ".yaml") || strings.HasSuffix(name, ".yml")
+}
+
 // EmbeddedFS is set by the main package to provide embedded filter files.
 // This avoids go:embed constraints on internal packages.
 var EmbeddedFS *embed.FS
@@ -31,7 +36,7 @@ func LoadEmbedded() ([]Filter, error) {
 
 	var filters []Filter
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+		if entry.IsDir() || !isYAMLFile(entry.Name()) {
 			continue
 		}
 		path := entry.Name()
@@ -63,7 +68,7 @@ func LoadUserFilters(dir string) ([]Filter, error) {
 
 	var filters []Filter
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+		if entry.IsDir() || !isYAMLFile(entry.Name()) {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))

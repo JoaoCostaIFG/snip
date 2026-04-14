@@ -35,6 +35,74 @@ on_error: "passthrough"
 	}
 }
 
+func TestLoadUserFiltersYMLExtension(t *testing.T) {
+	dir := t.TempDir()
+
+	validYAML := `
+name: "yml-filter"
+version: 1
+match:
+  command: "echo"
+pipeline:
+  - action: "keep_lines"
+    pattern: "\\S"
+on_error: "passthrough"
+`
+	if err := os.WriteFile(filepath.Join(dir, "echo.yml"), []byte(validYAML), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	filters, err := LoadUserFilters(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filters) != 1 {
+		t.Fatalf("got %d filters, want 1", len(filters))
+	}
+	if filters[0].Name != "yml-filter" {
+		t.Errorf("name = %q, want %q", filters[0].Name, "yml-filter")
+	}
+}
+
+func TestLoadUserFiltersBothExtensions(t *testing.T) {
+	dir := t.TempDir()
+
+	yamlContent := `
+name: "yaml-filter"
+version: 1
+match:
+  command: "cmd1"
+pipeline:
+  - action: "head"
+    n: 5
+on_error: "passthrough"
+`
+	ymlContent := `
+name: "yml-filter"
+version: 1
+match:
+  command: "cmd2"
+pipeline:
+  - action: "tail"
+    n: 3
+on_error: "passthrough"
+`
+	if err := os.WriteFile(filepath.Join(dir, "a.yaml"), []byte(yamlContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.yml"), []byte(ymlContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	filters, err := LoadUserFilters(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filters) != 2 {
+		t.Fatalf("got %d filters, want 2", len(filters))
+	}
+}
+
 func TestLoadUserFiltersMissingDir(t *testing.T) {
 	filters, err := LoadUserFilters("/tmp/nonexistent-snip-filters-test")
 	if err != nil {

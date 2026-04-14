@@ -50,10 +50,12 @@ tests/fixtures/         # Test fixtures for integration tests
 
 ```bash
 make build               # Build static binary (CGO_ENABLED=0)
+make build-lite          # Build without SQLite tracking (-tags lite, ~5MB smaller)
 make test                # Run all tests with coverage
 make test-race           # Run tests with race detector
 make lint                # go vet + golangci-lint
 make install             # Install to $GOPATH/bin
+make install-lite        # Install lite variant
 go test -run TestName ./internal/filter/...   # Single test
 goreleaser release --snapshot --clean          # Test release build locally
 ```
@@ -61,11 +63,20 @@ goreleaser release --snapshot --clean          # Test release build locally
 ## Design Constraints
 
 - **Startup < 10ms** — snip intercepts every shell command; latency is critical
+- **SQLite init cost** — `modernc.org/sqlite` `init()` adds ~3.4ms; use `NewLazyTracker` + `WarmUp()` to overlap with command execution
 - **Graceful degradation** — if a filter fails, fall back to raw command output
 - **Exit code preservation** — always propagate the underlying tool's exit code
 - **No async runtime** — goroutines are sufficient; avoid heavy dependencies
 - **Lazy compilation** — compile regex once (sync.Once), reuse across invocations
 - **Minimal memory** — stream and filter line-by-line, don't buffer entire output
+
+## Build Variants
+
+Two build modes via Go build tags:
+- **Full** (default): includes `modernc.org/sqlite` for token tracking via `internal/tracking/driver.go`
+- **Lite** (`-tags lite`): excludes SQLite, uses `driver_lite.go` stub — startup ~3ms faster
+
+Tests requiring SQLite must have `//go:build !lite` tag. Check `tracking.DriverAvailable` at runtime.
 
 ## Filter DSL
 
@@ -100,7 +111,7 @@ git tag -a v0.1.1 -m "fix: description" && git push origin v0.1.1
 
 ## Conventions
 
-- Respond in French, but all code, comments, variable names, commits, and documentation files must be in English
+- All code, comments, variable names, commits, and documentation files must be in English
 - Direct communication style — no hedging, state facts and solutions
 - TDD workflow: write test first, implement, refactor
 - Use context wrapping on errors: `fmt.Errorf("operation: %w", err)`

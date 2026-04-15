@@ -298,8 +298,127 @@ func TestEmptyInput(t *testing.T) {
 	}
 }
 
+func TestReplace(t *testing.T) {
+	input := lines("make[1]: building foo", "make[2]: entering dir", "gcc -o main main.c")
+	res, err := replace(input, map[string]any{
+		"pattern":     `^make\[\d+\]: `,
+		"replacement": "",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Lines[0] != "building foo" {
+		t.Errorf("got %q, want %q", res.Lines[0], "building foo")
+	}
+	if res.Lines[2] != "gcc -o main main.c" {
+		t.Errorf("unmatched line modified: %q", res.Lines[2])
+	}
+}
+
+func TestReplaceWithBackref(t *testing.T) {
+	input := lines("error[E0308]: mismatched types", "warning[W0001]: unused var")
+	res, err := replace(input, map[string]any{
+		"pattern":     `^(error|warning)\[(\w+)\]: `,
+		"replacement": "$1 $2: ",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Lines[0] != "error E0308: mismatched types" {
+		t.Errorf("got %q", res.Lines[0])
+	}
+}
+
+func TestMatchOutput(t *testing.T) {
+	input := lines("To github.com:user/repo.git", "abc1234..def5678 main -> main")
+	res, err := matchOutput(input, map[string]any{
+		"pattern": `.*->.*`,
+		"message": "ok pushed",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "ok pushed" {
+		t.Errorf("got %v, want [ok pushed]", res.Lines)
+	}
+}
+
+func TestMatchOutputUnless(t *testing.T) {
+	input := lines("error: failed to push some refs", "hint: update rejected")
+	res, err := matchOutput(input, map[string]any{
+		"pattern": `.*`,
+		"unless":  `(?i)error|fatal|rejected`,
+		"message": "ok",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// unless matched, so output should be unchanged
+	if len(res.Lines) != 2 {
+		t.Errorf("expected passthrough, got %v", res.Lines)
+	}
+}
+
+func TestMatchOutputNoMatch(t *testing.T) {
+	input := lines("some random output")
+	res, err := matchOutput(input, map[string]any{
+		"pattern": `^SPECIFIC_PATTERN$`,
+		"message": "ok",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "some random output" {
+		t.Errorf("expected passthrough, got %v", res.Lines)
+	}
+}
+
+func TestOnEmpty(t *testing.T) {
+	empty := ActionResult{Lines: nil, Metadata: make(map[string]any)}
+	res, err := onEmpty(empty, map[string]any{"message": "ok"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "ok" {
+		t.Errorf("got %v, want [ok]", res.Lines)
+	}
+}
+
+func TestOnEmptyWithBlanks(t *testing.T) {
+	input := lines("", "  ", "\t")
+	res, err := onEmpty(input, map[string]any{"message": "ok"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "ok" {
+		t.Errorf("got %v, want [ok]", res.Lines)
+	}
+}
+
+func TestOnEmptyWithContent(t *testing.T) {
+	input := lines("actual content")
+	res, err := onEmpty(input, map[string]any{"message": "ok"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "actual content" {
+		t.Errorf("expected passthrough, got %v", res.Lines)
+	}
+}
+
+func TestOnEmptyDefaultMessage(t *testing.T) {
+	empty := ActionResult{Lines: nil, Metadata: make(map[string]any)}
+	res, err := onEmpty(empty, map[string]any{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Lines) != 1 || res.Lines[0] != "ok" {
+		t.Errorf("got %v, want [ok]", res.Lines)
+	}
+}
+
 func TestGetAction(t *testing.T) {
-	for _, name := range []string{"keep_lines", "remove_lines", "head", "format_template"} {
+	for _, name := range []string{"keep_lines", "remove_lines", "head", "format_template", "replace", "match_output", "on_empty"} {
 		if _, ok := GetAction(name); !ok {
 			t.Errorf("action %q not found", name)
 		}

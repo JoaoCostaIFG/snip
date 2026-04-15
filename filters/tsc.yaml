@@ -1,13 +1,23 @@
 name: "tsc"
-version: 1
-description: "Basic tsc output filtering"
+version: 2
+description: "Condensed tsc output: type errors with locations and summary"
 
 match:
   command: "tsc"
 
+streams:
+  - stdout
+  - stderr
+
 pipeline:
   - action: "strip_ansi"
+  - action: "keep_lines"
+    pattern: "(error TS\\d+|warning TS\\d+|Found \\d+ error|Errors\\s+Files|^\\s+\\d+\\s+)"
+  - action: "compact_path"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 40
+    overflow_msg: "... more errors truncated"
 
 on_error: "passthrough"

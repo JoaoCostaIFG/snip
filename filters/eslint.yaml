@@ -1,13 +1,26 @@
 name: "eslint"
-version: 1
-description: "Basic eslint output filtering"
+version: 2
+description: "Condensed eslint output: errors grouped by file with summary"
 
 match:
   command: "eslint"
+  exclude_flags: ["-f", "--format"]
+
+streams:
+  - stdout
+  - stderr
 
 pipeline:
   - action: "strip_ansi"
+  - action: "remove_lines"
+    pattern: "^\\s*$"
+  - action: "keep_lines"
+    pattern: "(^/|^\\s+\\d+:\\d+|problems?|errors?|warnings?|fixable)"
+  - action: "compact_path"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 50
+    overflow_msg: "... more errors truncated"
 
 on_error: "passthrough"

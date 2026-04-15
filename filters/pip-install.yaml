@@ -1,13 +1,26 @@
 name: "pip-install"
-version: 1
-description: "Basic pip output filtering"
+version: 2
+description: "Condensed pip output: install summary and errors"
 
 match:
   command: "pip"
 
+streams:
+  - stdout
+  - stderr
+
 pipeline:
   - action: "strip_ansi"
+  - action: "remove_lines"
+    pattern: "(^\\s+Downloading|^\\s+Using cached|^\\s+\\d+\\.\\d+.*/.*kB|^Collecting )"
+  - action: "remove_lines"
+    pattern: "^\\s*$"
+  - action: "keep_lines"
+    pattern: "(Successfully|already satisfied|ERROR|error|WARNING|Requirement|Installing|Could not)"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 20
+    overflow_msg: "... more output truncated"
 
 on_error: "passthrough"

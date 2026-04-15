@@ -29,6 +29,9 @@ var actions = map[string]ActionFunc{
 	"aggregate":       aggregate,
 	"format_template": formatTemplate,
 	"compact_path":    compactPath,
+	"replace":         replace,
+	"match_output":    matchOutput,
+	"on_empty":        onEmpty,
 }
 
 // GetAction returns the ActionFunc for the given action name.
@@ -634,6 +637,62 @@ func compactPath(input ActionResult, params map[string]any) (ActionResult, error
 		out[i] = utils.CompactPath(line)
 	}
 	return ActionResult{Lines: out, Metadata: input.Metadata}, nil
+}
+
+func replace(input ActionResult, params map[string]any) (ActionResult, error) {
+	re, err := compilePattern(params, "pattern")
+	if err != nil {
+		return input, err
+	}
+	replacement := getStr(params, "replacement")
+	out := make([]string, len(input.Lines))
+	for i, line := range input.Lines {
+		out[i] = re.ReplaceAllString(line, replacement)
+	}
+	return ActionResult{Lines: out, Metadata: input.Metadata}, nil
+}
+
+func matchOutput(input ActionResult, params map[string]any) (ActionResult, error) {
+	re, err := compilePattern(params, "pattern")
+	if err != nil {
+		return input, err
+	}
+	message := getStr(params, "message")
+	if message == "" {
+		message = "ok"
+	}
+
+	joined := strings.Join(input.Lines, "\n")
+
+	// Check unless condition first: if unless matches, pass through unchanged.
+	unlessStr := getStr(params, "unless")
+	if unlessStr != "" {
+		unlessRe, err := regexp.Compile(unlessStr)
+		if err != nil {
+			return input, fmt.Errorf("match_output unless: %w", err)
+		}
+		if unlessRe.MatchString(joined) {
+			return input, nil
+		}
+	}
+
+	if re.MatchString(joined) {
+		return ActionResult{Lines: []string{message}, Metadata: input.Metadata}, nil
+	}
+	return input, nil
+}
+
+func onEmpty(input ActionResult, params map[string]any) (ActionResult, error) {
+	message := getStr(params, "message")
+	if message == "" {
+		message = "ok"
+	}
+	for _, line := range input.Lines {
+		if strings.TrimSpace(line) != "" {
+			return input, nil
+		}
+	}
+	return ActionResult{Lines: []string{message}, Metadata: input.Metadata}, nil
 }
 
 // --- helpers ---

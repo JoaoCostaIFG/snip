@@ -1,13 +1,27 @@
 name: "pytest"
-version: 1
-description: "Basic pytest output filtering"
+version: 2
+description: "Condensed pytest output: failures and summary"
 
 match:
   command: "pytest"
+  exclude_flags: ["--tb=no", "--co", "--collect-only"]
+
+inject:
+  args: ["--tb=line", "-q"]
+  skip_if_present: ["--tb=", "-q", "--quiet", "--co", "--collect-only", "-v", "--verbose"]
+
+streams:
+  - stdout
+  - stderr
 
 pipeline:
   - action: "strip_ansi"
+  - action: "keep_lines"
+    pattern: "(FAILED|PASSED|ERROR|passed|failed|error|warnings? summary|short test summary|\\d+ passed)"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 40
+    overflow_msg: "... more output truncated"
 
 on_error: "passthrough"

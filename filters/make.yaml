@@ -1,13 +1,28 @@
 name: "make"
-version: 1
-description: "Basic make output filtering"
+version: 2
+description: "Condensed make output: removes directory navigation noise"
 
 match:
   command: "make"
 
+streams:
+  - stdout
+  - stderr
+
 pipeline:
   - action: "strip_ansi"
+  - action: "remove_lines"
+    pattern: "^make\\[\\d+\\]: (Entering|Leaving) directory"
+  - action: "remove_lines"
+    pattern: "^(Nothing to be done for|make\\[\\d+\\]: Nothing to be done)"
+  - action: "remove_lines"
+    pattern: "^\\s*$"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 50
+    overflow_msg: "... more output truncated"
+  - action: "on_empty"
+    message: "ok"
 
 on_error: "passthrough"

@@ -1,13 +1,25 @@
 name: "jest"
-version: 1
-description: "Basic jest output filtering"
+version: 2
+description: "Condensed jest output: failures and summary"
 
 match:
   command: "jest"
+  exclude_flags: ["--json", "--verbose"]
+
+streams:
+  - stdout
+  - stderr
 
 pipeline:
   - action: "strip_ansi"
+  - action: "remove_lines"
+    pattern: "^\\s*(at (Object|processTicksAndRejections|Module\\.|node:)|$)"
+  - action: "keep_lines"
+    pattern: "(^(PASS|FAIL)|\\s+(\\u2713|\\u2715|\\u2717|\\u00d7|\\u25cf)|Tests:|Test Suites:|Snapshots?:|Time:|expect|Expected|Received)"
   - action: "truncate_lines"
-    max_length: 200
+    max: 120
+  - action: "head"
+    n: 40
+    overflow_msg: "... more output truncated"
 
 on_error: "passthrough"

@@ -1,13 +1,24 @@
 name: "docker-build"
-version: 1
-description: "Basic docker output filtering"
+version: 2
+description: "Condensed docker output: build steps and errors"
 
 match:
   command: "docker"
 
+streams:
+  - stdout
+  - stderr
+
 pipeline:
   - action: "strip_ansi"
+  - action: "remove_lines"
+    pattern: "^\\s*=> => "
+  - action: "remove_lines"
+    pattern: "^\\s*$"
   - action: "truncate_lines"
-    max_length: 200
+    max: 100
+  - action: "head"
+    n: 30
+    overflow_msg: "... more output truncated"
 
 on_error: "passthrough"

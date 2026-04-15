@@ -185,7 +185,7 @@ func TestRunGainNoTruncate(t *testing.T) {
 
 	runErr := RunGain(tracker, []string{"--top", "1", "--no-truncate"})
 
-	w.Close()
+	_ = w.Close()
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	os.Stdout = old

@@ -327,7 +327,10 @@ func TestParseAgentEquals(t *testing.T) {
 }
 
 func TestIsValidAgent(t *testing.T) {
-	valid := []string{"claude-code", "cursor", "codex", "windsurf", "cline"}
+	valid := []string{
+		"claude-code", "cursor", "codex", "windsurf", "cline",
+		"copilot", "gemini", "kilocode", "antigravity",
+	}
 	for _, a := range valid {
 		if !isValidAgent(a) {
 			t.Errorf("expected %q to be valid", a)
@@ -514,11 +517,22 @@ func TestPromptAgentFiles(t *testing.T) {
 		{"codex", "AGENTS.md"},
 		{"windsurf", ".windsurfrules"},
 		{"cline", ".clinerules"},
+		{"copilot", filepath.Join(".github", "copilot-instructions.md")},
+		{"gemini", "GEMINI.md"},
+		{"kilocode", filepath.Join(".kilocode", "rules", "snip-rules.md")},
+		{"antigravity", filepath.Join(".agents", "rules", "snip-rules.md")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.agent, func(t *testing.T) {
 			dir := t.TempDir()
 			targetPath := filepath.Join(dir, tt.filename)
+
+			// Create parent directories for subdirectory agents
+			if parentDir := filepath.Dir(targetPath); parentDir != dir {
+				if err := os.MkdirAll(parentDir, 0755); err != nil {
+					t.Fatalf("mkdir: %v", err)
+				}
+			}
 
 			content := promptContent("/usr/local/bin/snip")
 			if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
@@ -556,6 +570,40 @@ func TestUninstallPromptAgent(t *testing.T) {
 	// Verify it's gone
 	if _, err := os.Stat(targetPath); !os.IsNotExist(err) {
 		t.Error("file should be removed")
+	}
+}
+
+func TestInitPromptAgentSubdirectory(t *testing.T) {
+	dir := t.TempDir()
+
+	// Test kilocode: creates .kilocode/rules/snip-rules.md
+	targetPath := filepath.Join(dir, ".kilocode", "rules", "snip-rules.md")
+
+	// Simulate initPromptAgent behavior: create parent dirs + write file
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	content := promptContent("/usr/local/bin/snip")
+	if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	// Verify file exists
+	if _, err := os.Stat(targetPath); err != nil {
+		t.Fatal("file should exist after init")
+	}
+
+	// Simulate uninstall: remove file + clean empty parents
+	_ = os.Remove(targetPath)
+	for d := filepath.Dir(targetPath); d != dir && d != string(filepath.Separator); d = filepath.Dir(d) {
+		if err := os.Remove(d); err != nil {
+			break
+		}
+	}
+
+	// Verify directory tree cleaned up
+	if _, err := os.Stat(filepath.Join(dir, ".kilocode")); !os.IsNotExist(err) {
+		t.Error(".kilocode directory should be removed after uninstall")
 	}
 }
 

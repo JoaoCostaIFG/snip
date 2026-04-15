@@ -280,7 +280,9 @@ Commands:
   proxy        Passthrough without filtering
 
 Init flags:
-  --agent <name>  Agent to configure (claude-code, cursor, codex, windsurf, cline)
+  --agent <name>  Agent to configure:
+                  claude-code (default), cursor, codex, windsurf, cline,
+                  copilot, gemini, kilocode, antigravity
   --uninstall     Remove snip integration for the agent
 
 Flags:
@@ -304,7 +306,9 @@ Examples:
   snip cc-economics --tier sonnet
   snip init
   snip init --agent cursor
-  snip init --agent codex
+  snip init --agent copilot
+  snip init --agent gemini
+  snip init --agent kilocode
 `
 	fmt.Printf(usage, version)
 }

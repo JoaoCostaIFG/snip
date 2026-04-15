@@ -16,13 +16,21 @@ const (
 )
 
 // validAgents lists all supported agent names.
-var validAgents = []string{"claude-code", "cursor", "codex", "windsurf", "cline"}
+var validAgents = []string{
+	"claude-code", "cursor", "codex", "windsurf", "cline",
+	"copilot", "gemini", "kilocode", "antigravity",
+}
 
-// promptAgentFiles maps prompt-injection agents to their target filenames.
+// promptAgentFiles maps prompt-injection agents to their target file paths.
+// Paths may include subdirectories (created automatically on init).
 var promptAgentFiles = map[string]string{
-	"codex":    "AGENTS.md",
-	"windsurf": ".windsurfrules",
-	"cline":    ".clinerules",
+	"codex":       "AGENTS.md",
+	"windsurf":    ".windsurfrules",
+	"cline":       ".clinerules",
+	"copilot":     filepath.Join(".github", "copilot-instructions.md"),
+	"gemini":      "GEMINI.md",
+	"kilocode":    filepath.Join(".kilocode", "rules", "snip-rules.md"),
+	"antigravity": filepath.Join(".agents", "rules", "snip-rules.md"),
 }
 
 // parseAgent extracts the --agent value from args.
@@ -91,7 +99,7 @@ func Run(args []string) error {
 		return initClaudeCode(snipBin, home, filterDir)
 	case "cursor":
 		return initCursor(snipBin, home, filterDir)
-	case "codex", "windsurf", "cline":
+	case "codex", "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
 		return initPromptAgent(agent, snipBin, filterDir)
 	}
 	return nil
@@ -154,10 +162,17 @@ func initCursor(snipBin, home, filterDir string) error {
 	return nil
 }
 
-// initPromptAgent creates a prompt-injection file for codex, windsurf, or cline.
+// initPromptAgent creates a prompt-injection file for prompt-based agents.
 func initPromptAgent(agent, snipBin, filterDir string) error {
 	filename := promptAgentFiles[agent]
 	targetPath := filepath.Join(".", filename)
+
+	// Create parent directories if needed (e.g. .kilocode/rules/)
+	if dir := filepath.Dir(targetPath); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("create dir %s: %w", dir, err)
+		}
+	}
 
 	content := promptContent(snipBin)
 	if err := os.WriteFile(targetPath, []byte(content), 0644); err != nil {
@@ -206,7 +221,7 @@ func Uninstall(agent string) error {
 		return uninstallClaudeCode()
 	case "cursor":
 		return uninstallCursor()
-	case "codex", "windsurf", "cline":
+	case "codex", "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
 		return uninstallPromptAgent(agent)
 	}
 	return nil
@@ -249,12 +264,20 @@ func uninstallCursor() error {
 }
 
 // uninstallPromptAgent removes the prompt-injection file for the given agent.
+// For agents with subdirectory paths, it also removes empty parent directories.
 func uninstallPromptAgent(agent string) error {
 	filename := promptAgentFiles[agent]
 	targetPath := filepath.Join(".", filename)
 
 	if err := os.Remove(targetPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove %s: %w", filename, err)
+	}
+
+	// Clean up empty parent directories (best-effort, stops at ".")
+	for dir := filepath.Dir(targetPath); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		if err := os.Remove(dir); err != nil {
+			break // directory not empty or other error, stop
+		}
 	}
 
 	fmt.Printf("snip uninstalled (%s)\n", agent)

@@ -7,7 +7,7 @@
 
 # snip - Reduce LLM Token Usage by 60-90%
 
-**CLI proxy that filters shell output before it reaches your AI coding assistant's context window.** Works with Claude Code, Cursor, Copilot, Gemini CLI, Windsurf, Cline, Codex, Aider, and any tool that runs shell commands.
+**CLI proxy that filters shell output before it reaches your AI coding assistant's context window.** Works with Claude Code, Cursor, Copilot, Gemini CLI, Windsurf, Cline, Codex, Kilo Code, Antigravity, Aider, and any tool that runs shell commands.
 
 AI coding agents burn tokens on verbose shell output that adds zero signal. A passing `go test` produces hundreds of lines the LLM will never use. `git log` dumps full commit metadata when a one-liner per commit suffices.
 
@@ -145,13 +145,15 @@ snip integrates with every major AI coding assistant. One binary, universal comp
 |------|---------|--------|
 | **Claude Code** | `snip init` | PreToolUse hook (native) |
 | **Cursor** | `snip init --agent cursor` | beforeShellExecution hook (native) |
+| **GitHub Copilot** | `snip init --agent copilot` | .github/copilot-instructions.md |
+| **Gemini CLI** | `snip init --agent gemini` | GEMINI.md prompt injection |
 | **Codex (OpenAI)** | `snip init --agent codex` | AGENTS.md prompt injection |
 | **Windsurf** | `snip init --agent windsurf` | .windsurfrules prompt injection |
 | **Cline / Roo Code** | `snip init --agent cline` | .clinerules prompt injection |
+| **Kilo Code** | `snip init --agent kilocode` | .kilocode/rules/ prompt injection |
+| **Antigravity** | `snip init --agent antigravity` | .agents/rules/ prompt injection |
 | **OpenCode** | [opencode-snip](https://github.com/VincentHardouin/opencode-snip) plugin | tool.execute.before hook |
 | **OpenClaw** | `openclaw plugins install openclaw-snip` | plugin |
-| **GitHub Copilot** | shell aliases | prefix commands with snip |
-| **Gemini CLI** | shell aliases | prefix commands with snip |
 | **Aider** | shell aliases | prefix commands with snip |
 
 ### Claude Code
@@ -180,12 +182,16 @@ This patches `~/.cursor/hooks.json` with a `beforeShellExecution` hook. Works th
 snip init --agent cursor --uninstall   # remove the hook
 ```
 
-### Codex / Windsurf / Cline
+### Copilot / Gemini / Codex / Windsurf / Cline / Kilo Code / Antigravity
 
 ```bash
-snip init --agent codex      # creates AGENTS.md in current directory
-snip init --agent windsurf   # creates .windsurfrules
-snip init --agent cline      # creates .clinerules
+snip init --agent copilot      # creates .github/copilot-instructions.md
+snip init --agent gemini       # creates GEMINI.md
+snip init --agent codex        # creates AGENTS.md
+snip init --agent windsurf     # creates .windsurfrules
+snip init --agent cline        # creates .clinerules
+snip init --agent kilocode     # creates .kilocode/rules/snip-rules.md
+snip init --agent antigravity  # creates .agents/rules/snip-rules.md
 ```
 
 These agents use prompt injection: a markdown file instructs the LLM to prefix shell commands with snip. Project-scoped (created in the current directory).
@@ -209,7 +215,7 @@ The plugin uses the `tool.execute.before` hook to automatically prefix all comma
 openclaw plugins install openclaw-snip
 ```
 
-### Copilot / Gemini / Aider
+### Aider
 
 Use shell aliases to route commands through snip:
 
@@ -251,9 +257,13 @@ snip discover --all         # scan all projects
 snip -v <command>           # verbose mode (show filter details)
 snip proxy <command>        # force passthrough (no filtering)
 snip config                 # show config
-snip init                   # install Claude Code hook
-snip init --agent cursor    # install Cursor hook
-snip init --uninstall       # remove hook
+snip init                       # install Claude Code hook
+snip init --agent cursor        # install Cursor hook
+snip init --agent copilot       # install Copilot integration
+snip init --agent gemini        # install Gemini CLI integration
+snip init --agent kilocode      # install Kilo Code integration
+snip init --agent antigravity   # install Antigravity integration
+snip init --uninstall           # remove hook
 ```
 
 ## Filters
@@ -438,7 +448,7 @@ make install      # install to $GOPATH/bin
 Full documentation is available on the **[Wiki](https://github.com/edouard-claude/snip/wiki)**:
 
 - [Installation](https://github.com/edouard-claude/snip/wiki/Installation) — Homebrew, Go, binaries (macOS/Linux/Windows), from source
-- [Integration](https://github.com/edouard-claude/snip/wiki/Integration) — Claude Code, Cursor, Aider, standalone
+- [Integration](https://github.com/edouard-claude/snip/wiki/Integration) — Claude Code, Cursor, Copilot, Gemini, Kilo Code, Antigravity, and more
 - [Gain Dashboard](https://github.com/edouard-claude/snip/wiki/Gain-Dashboard) — Token savings reports and analytics
 - [Filters](https://github.com/edouard-claude/snip/wiki/Filters) — Built-in filters, custom filters
 - [Filter DSL Reference](https://github.com/edouard-claude/snip/wiki/Filter-DSL-Reference) — All 19 pipeline actions

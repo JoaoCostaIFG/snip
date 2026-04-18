@@ -153,6 +153,30 @@ func TestHasAnyFilter(t *testing.T) {
 	}
 }
 
+func TestHasAnyFilterCommandOnly(t *testing.T) {
+	// Command-only filter: no Subcommand field — should match any subcommand.
+	f := Filter{
+		Name:    "npm-filter",
+		Version: 1,
+		Match:   Match{Command: "npm"},
+		OnError: "passthrough",
+	}
+	reg := NewRegistry([]Filter{f})
+
+	if !reg.HasAnyFilter("npm", "install") {
+		t.Error("HasAnyFilter should return true for npm+install via command-only filter")
+	}
+	if !reg.HasAnyFilter("npm", "run") {
+		t.Error("HasAnyFilter should return true for npm+run via command-only filter")
+	}
+	if !reg.HasAnyFilter("npm", "") {
+		t.Error("HasAnyFilter should return true for npm (no subcommand) via command-only filter")
+	}
+	if reg.HasAnyFilter("yarn", "install") {
+		t.Error("HasAnyFilter should return false for yarn (no filter registered)")
+	}
+}
+
 func TestShouldInject(t *testing.T) {
 	f := Filter{
 		Name: "git-log",

@@ -43,7 +43,7 @@ func TestRunRewriteSupported(t *testing.T) {
 	}
 
 	rewritten := extractRewrittenCommand(t, out.String())
-	want := `"/usr/local/bin/snip" -- git log -10`
+	want := `"/usr/local/bin/snip" run -- git log -10`
 	if rewritten != want {
 		t.Errorf("rewritten = %q, want %q", rewritten, want)
 	}
@@ -69,7 +69,7 @@ func TestRunAlreadyRewritten(t *testing.T) {
 	commands := []string{"git"}
 	snipBin := "/usr/local/bin/snip"
 
-	alreadyRewritten := `"/usr/local/bin/snip" -- git status`
+	alreadyRewritten := `"/usr/local/bin/snip" run -- git status`
 	input := makePayload("Bash", alreadyRewritten)
 	var out bytes.Buffer
 	err := Run(strings.NewReader(input), &out, commands, snipBin)
@@ -94,7 +94,7 @@ func TestRunMultiSegment(t *testing.T) {
 	}
 
 	rewritten := extractRewrittenCommand(t, out.String())
-	want := `"/usr/local/bin/snip" -- git add . && git commit -m 'fix'`
+	want := `"/usr/local/bin/snip" run -- git add . && git commit -m 'fix'`
 	if rewritten != want {
 		t.Errorf("rewritten = %q, want %q", rewritten, want)
 	}
@@ -112,7 +112,7 @@ func TestRunEnvVarPrefix(t *testing.T) {
 	}
 
 	rewritten := extractRewrittenCommand(t, out.String())
-	want := `CGO_ENABLED=0 "/usr/local/bin/snip" -- go test ./...`
+	want := `CGO_ENABLED=0 "/usr/local/bin/snip" run -- go test ./...`
 	if rewritten != want {
 		t.Errorf("rewritten = %q, want %q", rewritten, want)
 	}
@@ -204,7 +204,7 @@ func TestRunMultipleEnvVars(t *testing.T) {
 	}
 
 	rewritten := extractRewrittenCommand(t, out.String())
-	want := `FOO=1 BAR=2 "/usr/local/bin/snip" -- make build`
+	want := `FOO=1 BAR=2 "/usr/local/bin/snip" run -- make build`
 	if rewritten != want {
 		t.Errorf("rewritten = %q, want %q", rewritten, want)
 	}

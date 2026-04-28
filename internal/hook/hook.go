@@ -92,7 +92,7 @@ func Run(r io.Reader, w io.Writer, commands []string, snipBin string) error {
 
 	// Build rewritten command.
 	rest := ti.Command[len(firstSegment):]
-	rewritten := prefix + envVars + quotedBin + " -- " + bareCmd + rest
+	rewritten := prefix + envVars + quotedBin + " run -- " + bareCmd + rest
 
 	// Preserve all original tool_input fields, replacing command.
 	var originalInput map[string]any

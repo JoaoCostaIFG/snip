@@ -50,6 +50,9 @@ func (t *Tracker) ensureOpen() error {
 			return
 		}
 
+		db.Exec("PRAGMA journal_mode=WAL")
+		db.Exec("PRAGMA busy_timeout=5000")
+
 		if _, err := db.Exec(createTableSQL); err != nil {
 			_ = db.Close()
 			t.initErr = fmt.Errorf("create table: %w", err)

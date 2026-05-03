@@ -82,8 +82,9 @@ func (r *Registry) ShouldInject(f *Filter, args []string) ([]string, bool) {
 		result = append(result, f.Inject.Args...)
 		result = append(result, args[dashDashIdx:]...)
 	} else {
-		result = append(result, args...)
+		result = append(result, args[0])
 		result = append(result, f.Inject.Args...)
+		result = append(result, args[1:]...)
 	}
 
 	// Apply defaults (only if flag not already present)

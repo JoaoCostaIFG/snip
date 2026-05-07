@@ -36,11 +36,12 @@ func (p *Pipeline) Run(command string, args []string) int {
 	f := p.Registry.Match(command, subcommand, filterArgs)
 
 	// No filter found: passthrough.
-	// Only print a hint when no filter is registered at all — if a filter exists
-	// but was excluded by flags (e.g. go test -v), stay silent to avoid the
-	// misleading "no filter for go" message.
+	// Only print a hint when no filter is registered for the base command at
+	// all. If a filter exists but was excluded by flags (e.g. go test -v) or
+	// only covers other subcommands (e.g. git-commit but not git checkout),
+	// stay silent to avoid the misleading "no filter for git" message (#56).
 	if f == nil {
-		if !p.QuietNoFilter && !p.Registry.HasAnyFilter(command, subcommand) {
+		if !p.QuietNoFilter && !p.Registry.HasAnyFilterForCommand(command) {
 			fmt.Fprintf(os.Stderr, "snip: no filter for %q, passing through -- you can run %q directly\n", command, command)
 		}
 		return p.Passthrough(command, args)

@@ -177,6 +177,33 @@ func TestHasAnyFilterCommandOnly(t *testing.T) {
 	}
 }
 
+func TestHasAnyFilterForCommand(t *testing.T) {
+	// Reproduces issue #56: snip ships filters for git-add, git-commit, etc.
+	// but not for git checkout. HasAnyFilterForCommand("git") must return true
+	// so that running "git checkout" doesn't print the misleading
+	// "no filter for git" hint.
+	filters := []Filter{
+		{Name: "git-add", Version: 1, Match: Match{Command: "git", Subcommand: "add"}, OnError: "passthrough"},
+		{Name: "git-commit", Version: 1, Match: Match{Command: "git", Subcommand: "commit"}, OnError: "passthrough"},
+	}
+	reg := NewRegistry(filters)
+
+	if !reg.HasAnyFilterForCommand("git") {
+		t.Error("HasAnyFilterForCommand should return true for git (subcommand filters registered)")
+	}
+	if reg.HasAnyFilterForCommand("python") {
+		t.Error("HasAnyFilterForCommand should return false for python (no filter registered)")
+	}
+
+	// Command-only filter must also be recognized.
+	regCmdOnly := NewRegistry([]Filter{
+		{Name: "npm", Version: 1, Match: Match{Command: "npm"}, OnError: "passthrough"},
+	})
+	if !regCmdOnly.HasAnyFilterForCommand("npm") {
+		t.Error("HasAnyFilterForCommand should return true for npm (command-only filter)")
+	}
+}
+
 func TestShouldInject(t *testing.T) {
 	f := Filter{
 		Name: "git-log",

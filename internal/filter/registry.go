@@ -127,6 +127,23 @@ func (r *Registry) HasAnyFilter(command, subcommand string) bool {
 	return ok
 }
 
+// HasAnyFilterForCommand returns true if any filter is registered for the
+// base command, regardless of subcommand or flag constraints. Use this to
+// avoid the misleading "no filter for git" hint when "git" has filters for
+// other subcommands (e.g. git-commit) but not for the one being run.
+func (r *Registry) HasAnyFilterForCommand(command string) bool {
+	if _, ok := r.byKey[command]; ok {
+		return true
+	}
+	prefix := command + ":"
+	for key := range r.byKey {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 // Commands returns a sorted, unique list of base command names in the registry.
 // Keys like "git:log" are split on ":" and only the base command "git" is kept.
 func (r *Registry) Commands() []string {

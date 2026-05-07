@@ -233,3 +233,46 @@ func TestPipelineRunSilentWhenFilterExcludedByFlags(t *testing.T) {
 		t.Errorf("expected silent stderr when filter exists but excluded by flags, got: %q", buf.String())
 	}
 }
+
+func TestPipelineRunSilentWhenSiblingSubcommandHasFilter(t *testing.T) {
+	// Reproduces issue #56: snip has filters for "true:foo" but the user runs
+	// "true bar". Before the fix, snip printed the misleading
+	// "no filter for true" message. Expected behavior: stay silent — a filter
+	// exists for the base command, just not for this subcommand.
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping: no 'true' command on Windows")
+	}
+
+	f := filter.Filter{
+		Name:    "true-foo",
+		Version: 1,
+		Match:   filter.Match{Command: "true", Subcommand: "foo"},
+		OnError: "passthrough",
+		Pipeline: filter.Pipeline{
+			{ActionName: "keep_lines", Params: map[string]any{"pattern": `.`}},
+		},
+	}
+	reg := filter.NewRegistry([]filter.Filter{f})
+	p := &Pipeline{
+		Registry:      reg,
+		QuietNoFilter: false,
+	}
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stderr = w
+	t.Cleanup(func() { os.Stderr = oldStderr })
+
+	p.Run("true", []string{"bar"})
+
+	_ = w.Close()
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+
+	if strings.Contains(buf.String(), "no filter for") {
+		t.Errorf("expected silent stderr when sibling subcommand filter exists, got: %q", buf.String())
+	}
+}

@@ -58,6 +58,9 @@ func Run(args []string) int {
 	// Built-in commands
 	switch command {
 	case "hook":
+		if len(cmdArgs) > 0 && cmdArgs[0] == "codex" {
+			return runHookCodex()
+		}
 		return runHook()
 
 	case "hook-audit":
@@ -230,17 +233,40 @@ func parseSeparatorArgs(args []string, cmdName string) (string, []string, string
 // runHook handles the "snip hook" subcommand for Claude Code PreToolUse.
 // Always returns 0 (graceful degradation).
 func runHook() int {
-	snipBin, err := os.Executable()
-	if err != nil {
+	snipBin, commands, ok := loadHookContext()
+	if !ok {
 		return 0
 	}
-	snipBin, err = filepath.EvalSymlinks(snipBin)
-	if err != nil {
+	_ = hook.Run(os.Stdin, os.Stdout, commands, snipBin)
+	return 0
+}
+
+// runHookCodex handles "snip hook codex" — Codex's PreToolUse hook entry.
+// Codex cannot rewrite the command in place, so the handler responds with
+// a deny + suggested rewrite. Always returns 0 (graceful degradation).
+func runHookCodex() int {
+	snipBin, commands, ok := loadHookContext()
+	if !ok {
 		return 0
 	}
-	snipBin, err = filepath.Abs(snipBin)
+	_ = hook.RunCodex(os.Stdin, os.Stdout, commands, snipBin)
+	return 0
+}
+
+// loadHookContext resolves the snip binary path and loads the filter
+// registry. Returns ok=false on any failure so callers can exit 0 silently.
+func loadHookContext() (snipBin string, commands []string, ok bool) {
+	bin, err := os.Executable()
 	if err != nil {
-		return 0
+		return "", nil, false
+	}
+	bin, err = filepath.EvalSymlinks(bin)
+	if err != nil {
+		return "", nil, false
+	}
+	bin, err = filepath.Abs(bin)
+	if err != nil {
+		return "", nil, false
 	}
 
 	cfg, err := config.Load()
@@ -250,14 +276,11 @@ func runHook() int {
 
 	filters, err := filter.LoadAll(cfg.Filters.Dirs())
 	if err != nil {
-		return 0
+		return "", nil, false
 	}
 
 	registry := filter.NewRegistry(filters)
-	commands := registry.Commands()
-
-	_ = hook.Run(os.Stdin, os.Stdout, commands, snipBin)
-	return 0
+	return bin, registry.Commands(), true
 }
 
 func runPipeline(command string, args []string, flags Flags) int {

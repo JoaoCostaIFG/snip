@@ -53,6 +53,26 @@ func parseAgent(args []string) (string, []string) {
 	return agent, remaining
 }
 
+// parseMode extracts the --mode value from args. Empty string means no
+// --mode flag was provided; the caller decides the per-agent default.
+func parseMode(args []string) (string, []string) {
+	mode := ""
+	var remaining []string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--mode" && i+1 < len(args) {
+			mode = args[i+1]
+			i++
+		} else if strings.HasPrefix(arg, "--mode=") {
+			mode = strings.TrimPrefix(arg, "--mode=")
+		} else {
+			remaining = append(remaining, arg)
+		}
+	}
+	return mode, remaining
+}
+
 // isValidAgent checks if the given agent name is supported.
 func isValidAgent(name string) bool {
 	for _, a := range validAgents {
@@ -66,9 +86,14 @@ func isValidAgent(name string) bool {
 // Run installs the snip integration for the specified agent.
 func Run(args []string) error {
 	agent, remaining := parseAgent(args)
+	mode, remaining := parseMode(remaining)
 
 	if !isValidAgent(agent) {
 		return fmt.Errorf("unknown agent %q, valid agents: %s", agent, strings.Join(validAgents, ", "))
+	}
+
+	if mode != "" && mode != "hook" && mode != "prompt" {
+		return fmt.Errorf("unknown mode %q, valid modes: hook, prompt", mode)
 	}
 
 	for _, arg := range remaining {
@@ -99,7 +124,14 @@ func Run(args []string) error {
 		return initClaudeCode(snipBin, home, filterDir)
 	case "cursor":
 		return initCursor(snipBin, home, filterDir)
-	case "codex", "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
+	case "codex":
+		// Codex defaults to runtime hooks; --mode prompt selects the legacy
+		// AGENTS.md prompt-injection path for older Codex releases.
+		if mode == "prompt" {
+			return initPromptAgent(agent, snipBin, filterDir)
+		}
+		return initCodex(snipBin, home, filterDir)
+	case "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
 		return initPromptAgent(agent, snipBin, filterDir)
 	}
 	return nil
@@ -221,7 +253,9 @@ func Uninstall(agent string) error {
 		return uninstallClaudeCode()
 	case "cursor":
 		return uninstallCursor()
-	case "codex", "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
+	case "codex":
+		return uninstallCodex()
+	case "windsurf", "cline", "copilot", "gemini", "kilocode", "antigravity":
 		return uninstallPromptAgent(agent)
 	}
 	return nil

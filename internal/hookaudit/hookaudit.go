@@ -37,12 +37,17 @@ func LogPath() string {
 }
 
 // Event represents a single hook audit log entry.
+//
+// Agent identifies which integration produced the event ("claude-code",
+// "cursor", "codex", ...). Omitted on disk for legacy log lines and read
+// back as the empty string.
 type Event struct {
 	Timestamp time.Time `json:"timestamp"`
 	Command   string    `json:"command"`
 	Base      string    `json:"base"`
 	Matched   bool      `json:"matched"`
 	Rewritten bool      `json:"rewritten"`
+	Agent     string    `json:"agent,omitempty"`
 }
 
 // Append writes an event to the audit log as a JSONL line.

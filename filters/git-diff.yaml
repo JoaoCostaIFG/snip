@@ -5,7 +5,7 @@ description: "Condensed git diff with stat summary"
 match:
   command: "git"
   subcommand: "diff"
-  exclude_flags: ["--stat", "--name-only", "--name-status"]
+  exclude_flags: ["--stat", "--name-only", "--name-status", "--staged", "--cached"]
 
 inject:
   args: ["--stat"]
